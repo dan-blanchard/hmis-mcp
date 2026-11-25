@@ -33,18 +33,19 @@ Open a new terminal afterwards so the `uvx` command is found. Then make a
 synthetic export and check that the server can read it:
 
 ```bash
-uvx --from https://github.com/dan-blanchard/hmis-mcp/archive/refs/heads/main.zip hmis-mcp sample hmis-sample
+uvx hmis-mcp sample hmis-sample
 ```
 
 ```bash
-uvx --from https://github.com/dan-blanchard/hmis-mcp/archive/refs/heads/main.zip hmis-mcp check --export hmis-sample
+uvx hmis-mcp check --export hmis-sample
 ```
 
 `check` prints the export's layout, its date range and a few totals, then `OK`.
 It never prints client data. For real data, run your HMIS's HUD CSV export for
 your agency's projects and give `check` the zip or the folder instead.
 
-To pick up a newer version later, add `--refresh` right after `uvx`.
+`uvx` downloads the server from PyPI the first time and keeps a copy. To move
+to a newer release later, run it once as `uvx hmis-mcp@latest`.
 
 ### If you are an AI agent installing this for someone
 
@@ -106,10 +107,7 @@ holds them:
   "mcpServers": {
     "hmis": {
       "command": "uvx",
-      "args": [
-        "--from", "https://github.com/dan-blanchard/hmis-mcp/archive/refs/heads/main.zip",
-        "hmis-mcp", "--export", "/absolute/path/to/export.zip"
-      ]
+      "args": ["hmis-mcp", "--export", "/absolute/path/to/export.zip"]
     }
   }
 }
@@ -118,7 +116,7 @@ holds them:
 | Agent | Where it goes |
 |---|---|
 | Claude Desktop | `claude_desktop_config.json` |
-| Claude Code | `claude mcp add hmis -- uvx --from https://github.com/dan-blanchard/hmis-mcp/archive/refs/heads/main.zip hmis-mcp --export /absolute/path/to/export.zip` |
+| Claude Code | `claude mcp add hmis -- uvx hmis-mcp --export /absolute/path/to/export.zip` |
 | Cursor | `.cursor/mcp.json` |
 | Gemini CLI | `~/.gemini/settings.json` |
 | VS Code | `.vscode/mcp.json`, with the top-level key `servers` instead of `mcpServers` |
@@ -137,7 +135,7 @@ Make a secret. This writes it to a file in your home folder, readable only by
 you on macOS and Linux, and by whoever can read your user profile on Windows:
 
 ```bash
-uvx --from https://github.com/dan-blanchard/hmis-mcp/archive/refs/heads/main.zip hmis-mcp secret --out ~/.hmis-mcp-secret
+uvx hmis-mcp secret --out ~/.hmis-mcp-secret
 ```
 
 Give the server a public address. The server itself stays bound to
@@ -151,7 +149,7 @@ That prints an address like `https://something.trycloudflare.com`. Start the
 server with it:
 
 ```bash
-uvx --from https://github.com/dan-blanchard/hmis-mcp/archive/refs/heads/main.zip hmis-mcp --export /absolute/path/to/export.zip --transport http --public-url https://something.trycloudflare.com --secret-file ~/.hmis-mcp-secret
+uvx hmis-mcp --export /absolute/path/to/export.zip --transport http --public-url https://something.trycloudflare.com --secret-file ~/.hmis-mcp-secret
 ```
 
 The MCP endpoint is the public address plus `/mcp`.
@@ -292,6 +290,9 @@ They also write the same population in each supported HUD CSV revision and
 require identical answers, check that tool schemas avoid the JSON Schema
 features some model providers reject, and drive the HTTP transport through a
 full OAuth sign-in. CI runs them on Windows, macOS and Linux.
+
+To release: raise `version` in `pyproject.toml`, merge, then publish a GitHub
+release tagged `v` plus that version. The release workflow uploads it to PyPI.
 
 ## License
 
