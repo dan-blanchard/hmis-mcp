@@ -6,10 +6,24 @@ readme = "README.md"
 license = "0BSD"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
+keywords = ["mcp", "hmis", "homelessness", "hud", "privacy", "disclosure-control"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Information Technology",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
 dependencies = [
     "duckdb>=1.1",
     "mcp>=2,<3",
 ]
+
+[project.urls]
+Repository = "https://github.com/dan-blanchard/hmis-mcp"
+Issues = "https://github.com/dan-blanchard/hmis-mcp/issues"
 
 [project.scripts]
 hmis-mcp = "hmis_mcp.server:main"

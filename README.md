@@ -10,20 +10,60 @@ It reads the HUD HMIS CSV export, which every HMIS vendor is required to
 produce, so it is not tied to one vendor or one state: WellSky Community
 Services, Bitfocus Clarity, ClientTrack and the rest all export it.
 
-## Quick start
+## Install
 
-Try it on synthetic data first:
+The only thing you install yourself is [uv](https://docs.astral.sh/uv/), a
+small tool that fetches Python and this server when they are needed. There is
+nothing to clone and no Python to set up. This works the same on Windows, macOS
+and Linux.
+
+On Windows, in PowerShell:
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+On macOS or Linux:
 
 ```bash
-uv run hmis-mcp sample ./sample-export
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Open a new terminal afterwards so the `uvx` command is found. Then make a
+synthetic export and check that the server can read it:
+
+```bash
+uvx --from https://github.com/dan-blanchard/hmis-mcp/archive/refs/heads/main.zip hmis-mcp sample hmis-sample
 ```
 
 ```bash
-uv run hmis-mcp --export ./sample-export
+uvx --from https://github.com/dan-blanchard/hmis-mcp/archive/refs/heads/main.zip hmis-mcp check --export hmis-sample
 ```
 
-For real data, run your HMIS's HUD CSV export for your agency's projects and
-point `--export` at the folder or the zip.
+`check` prints the export's layout, its date range and a few totals, then `OK`.
+It never prints client data. For real data, run your HMIS's HUD CSV export for
+your agency's projects and give `check` the zip or the folder instead.
+
+To pick up a newer version later, add `--refresh` right after `uvx`.
+
+### If you are an AI agent installing this for someone
+
+1. Run `uvx --version`. If it is missing, ask before installing uv with the
+   command above for their operating system.
+2. Ask where their HMIS CSV export is (a zip or a folder). Do not open, list,
+   print or read the export yourself. It holds client names, birth dates and
+   Social Security numbers, and keeping those out of your context is the point
+   of this server. Only pass its path along.
+3. Run the `check` command above with that path. It prints counts only. If it
+   fails, show the person the message and stop.
+4. Add the server to your own MCP configuration using the block under
+   "Agents that run a local command". Use absolute paths. In JSON on Windows,
+   write paths with forward slashes (`C:/Users/name/export.zip`).
+5. If the app reports that `uvx` can't be found, which happens with desktop
+   apps that don't inherit the terminal's PATH, replace `"uvx"` with its full
+   path: `where uvx` on Windows, `which uvx` elsewhere.
+6. Reload your MCP servers and call `describe_dataset` to confirm it answers.
+7. Leave the HTTP transport and tunnels alone unless the person asks for them.
 
 ## Supported export formats
 
@@ -58,19 +98,18 @@ start a program on your computer.
 
 Claude Code, Claude Desktop, Codex CLI, Gemini CLI, Cursor and VS Code all
 launch the server themselves. Nothing listens on the network. They all want the
-same three facts, a command, its arguments and some environment variables, and
-differ only in which file holds them:
+same two facts, a command and its arguments, and differ only in which file
+holds them:
 
 ```json
 {
   "mcpServers": {
     "hmis": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/hmis-mcp", "hmis-mcp"],
-      "env": {
-        "HMIS_EXPORT_PATH": "/path/to/export.zip",
-        "HMIS_AUDIT_LOG": "/path/to/hmis-audit.jsonl"
-      }
+      "command": "uvx",
+      "args": [
+        "--from", "https://github.com/dan-blanchard/hmis-mcp/archive/refs/heads/main.zip",
+        "hmis-mcp", "--export", "/absolute/path/to/export.zip"
+      ]
     }
   }
 }
@@ -79,14 +118,14 @@ differ only in which file holds them:
 | Agent | Where it goes |
 |---|---|
 | Claude Desktop | `claude_desktop_config.json` |
-| Claude Code | `claude mcp add hmis -- uv run --directory /path/to/hmis-mcp hmis-mcp --export /path/to/export.zip` |
+| Claude Code | `claude mcp add hmis -- uvx --from https://github.com/dan-blanchard/hmis-mcp/archive/refs/heads/main.zip hmis-mcp --export /absolute/path/to/export.zip` |
 | Cursor | `.cursor/mcp.json` |
 | Gemini CLI | `~/.gemini/settings.json` |
 | VS Code | `.vscode/mcp.json`, with the top-level key `servers` instead of `mcpServers` |
-| Codex CLI | `~/.codex/config.toml`, as a `[mcp_servers.hmis]` table with `command`, `args` and `env` |
+| Codex CLI | `~/.codex/config.toml`, as a `[mcp_servers.hmis]` table with `command` and `args` |
 
 These file locations change between releases. If one doesn't work, check that
-agent's MCP documentation; the command, args and env stay the same.
+agent's MCP documentation; the command and args stay the same.
 
 ### Agents that connect to a URL (HTTP)
 
@@ -94,10 +133,11 @@ ChatGPT cannot start a local program. Its servers call yours, so the server
 needs a public `https://` address. The same goes for the OpenAI Responses API
 and most hosted agent platforms.
 
-Make a secret and keep it somewhere only you can read:
+Make a secret. This writes it to a file in your home folder, readable only by
+you on macOS and Linux, and by whoever can read your user profile on Windows:
 
 ```bash
-uv run hmis-mcp secret > ~/.hmis-mcp-secret && chmod 600 ~/.hmis-mcp-secret
+uvx --from https://github.com/dan-blanchard/hmis-mcp/archive/refs/heads/main.zip hmis-mcp secret --out ~/.hmis-mcp-secret
 ```
 
 Give the server a public address. The server itself stays bound to
@@ -111,7 +151,7 @@ That prints an address like `https://something.trycloudflare.com`. Start the
 server with it:
 
 ```bash
-uv run hmis-mcp --export /path/to/export.zip --transport http --public-url https://something.trycloudflare.com --secret-file ~/.hmis-mcp-secret
+uvx --from https://github.com/dan-blanchard/hmis-mcp/archive/refs/heads/main.zip hmis-mcp --export /absolute/path/to/export.zip --transport http --public-url https://something.trycloudflare.com --secret-file ~/.hmis-mcp-secret
 ```
 
 The MCP endpoint is the public address plus `/mcp`.
@@ -239,13 +279,19 @@ or your HMIS lead before it can be written.
 ## Development
 
 ```bash
-uv run pytest
+git clone https://github.com/dan-blanchard/hmis-mcp
+```
+
+```bash
+cd hmis-mcp && uv run pytest
 ```
 
 The tests build a synthetic export with planted names and SSNs, run every tool
 across every dimension, and fail if any planted value appears in any output.
-They also check that tool schemas avoid the JSON Schema features some model
-providers reject, and drive the HTTP transport through a full OAuth sign-in.
+They also write the same population in each supported HUD CSV revision and
+require identical answers, check that tool schemas avoid the JSON Schema
+features some model providers reject, and drive the HTTP transport through a
+full OAuth sign-in. CI runs them on Windows, macOS and Linux.
 
 ## License
 

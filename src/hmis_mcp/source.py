@@ -144,13 +144,17 @@ class CsvExportSource:
                     raise SourceError(f"export is missing required file {table}.csv")
                 _create_empty(con, table, required + optional)
                 continue
-            rel = con.read_csv(str(path), header=True, all_varchar=True)
-            present = {c.lower(): c for c in rel.columns}
+            # Read the header with a query that completes, so no file handle outlives
+            # it. Windows won't delete a temp file that is still open.
+            columns = [d[0] for d in con.execute(
+                "SELECT * FROM read_csv(?, header=true, all_varchar=true) LIMIT 0",
+                [str(path)]).description]
+            present = {c.lower(): c for c in columns}
             missing = [c for c in required if c.lower() not in present]
             if missing:
                 raise SourceError(f"{table}.csv is missing required columns: {missing}")
             if table == "Client":
-                self._record_format(con, rel.columns)
+                self._record_format(con, columns)
             aliases = ALIASES.get(table, {})
             select = []
             for col in required + optional:

@@ -144,7 +144,8 @@ def test_oauth_flow_then_tool_calls(server):
 
     # Nothing usable is written to disk: only hashes.
     state = (tmp / "state.json").read_text()
-    assert oct((tmp / "state.json").stat().st_mode & 0o777) == "0o600"
+    if os.name != "nt":  # Windows has no owner-only mode bits to check
+        assert oct((tmp / "state.json").stat().st_mode & 0o777) == "0o600"
     for value in (SECRET, tok["access_token"], tok["refresh_token"],
                   fresh.json()["access_token"], fresh.json()["refresh_token"]):
         assert value not in state

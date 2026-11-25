@@ -162,10 +162,48 @@ def _is_loopback(host: str) -> bool:
         return False
 
 
+def _decode_secret(raw: bytes) -> str:
+    """Windows PowerShell's `>` writes UTF-16 with a byte-order mark; accept that too."""
+    if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return raw.decode("utf-16").strip()
+    return raw.decode("utf-8-sig").strip()
+
+
 def _read_secret(args: argparse.Namespace) -> str | None:
     if args.secret_file:
-        return Path(args.secret_file).expanduser().read_text().strip()
+        return _decode_secret(Path(args.secret_file).expanduser().read_bytes())
     return os.environ.get("HMIS_MCP_SECRET") or None
+
+
+def _write_secret(path: str) -> Path:
+    """Create a secret file readable only by its owner, without shell redirection."""
+    target = Path(path).expanduser()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(new_secret() + "\n")
+    return target
+
+
+def _check(args: argparse.Namespace) -> None:
+    """Load an export and report what the server would see. Prints no client data."""
+    try:
+        engine = Engine(Model(CsvExportSource(args.export, args.csv_version)),
+                        Policy(args.min_cell_size))
+    except (SourceError, ValueError) as e:
+        sys.exit(f"hmis-mcp: {e}")
+    desc = engine.describe()
+    src, totals = desc["source"], desc["totals_for_export_period"]
+    print(f"Export loaded: {src['csv_format']} layout, "
+          f"{src['export_period']['start']} to {src['export_period']['end']}")
+    print(f"Projects: {len(engine.list_projects())}")
+    if totals and not totals.get("suppressed"):
+        print(f"Clients: {totals['clients']}  Enrollments: {totals['enrollments']}")
+    else:
+        print(f"Clients: fewer than {desc['privacy']['min_cell_size']} (suppressed)")
+    for warning in src.get("warnings", []):
+        print(f"Warning: {warning}")
+    print("OK")
 
 
 def _serve(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
@@ -212,7 +250,7 @@ def _serve(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     argv = list(sys.argv[1:] if argv is None else argv)
-    commands = ("serve", "sample", "secret")
+    commands = ("serve", "sample", "secret", "check")
     if not argv or (argv[0] not in commands and argv[0] not in ("-h", "--help")):
         argv.insert(0, "serve")
 
@@ -252,14 +290,28 @@ def main(argv: list[str] | None = None) -> None:
     sample.add_argument("directory")
     sample.add_argument("--clients", type=int, default=1500)
     sample.add_argument("--csv-version", type=int, choices=(2022, 2024, 2026), default=2026)
-    sub.add_parser("secret", help="Print a new random access secret")
+    secret = sub.add_parser("secret", help="Make a new random access secret")
+    secret.add_argument("--out", help="Write it to this file (owner-only) instead of printing")
+    check = sub.add_parser("check", help="Load an export and confirm it is readable")
+    check.add_argument("--export", default=os.environ.get("HMIS_EXPORT_PATH"), required=not
+                       os.environ.get("HMIS_EXPORT_PATH"))
+    check.add_argument("--csv-version", type=int, choices=(2022, 2024, 2026))
+    check.add_argument("--min-cell-size", type=int, default=DEFAULT_MIN_CELL)
 
     args = parser.parse_args(argv)
     if args.command == "sample":
         from .sample import generate
         print(f"Wrote synthetic export to {generate(args.directory, args.clients, version=args.csv_version)}")
     elif args.command == "secret":
-        print(new_secret())
+        if args.out:
+            try:
+                print(f"Wrote a new secret to {_write_secret(args.out)}")
+            except FileExistsError:
+                sys.exit(f"hmis-mcp: {args.out} already exists; not overwriting it")
+        else:
+            print(new_secret())
+    elif args.command == "check":
+        _check(args)
     else:
         _serve(args, serve)
 
