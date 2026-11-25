@@ -1,0 +1,24 @@
+[project]
+name = "hmis-mcp"
+version = "0.1.0"
+description = "Aggregate-only MCP server for HMIS data: reports and analytics without exporting PII"
+readme = "README.md"
+license = "0BSD"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=1.1",
+    "mcp>=2,<3",
+]
+
+[project.scripts]
+hmis-mcp = "hmis_mcp.server:main"
+
+[build-system]
+requires = ["uv_build>=0.11.32,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
