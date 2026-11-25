@@ -85,6 +85,43 @@ to a newer release later, run it once as `uvx hmis-mcp@latest`.
 6. Reload your MCP servers and call `describe_dataset` to confirm it answers.
 7. Leave the HTTP transport and tunnels alone unless the person asks for them.
 
+## Getting the export
+
+The file this reads is the HUD CSV export, sometimes called the HMIS CSV
+export: a zip of about two dozen CSV files in a layout HUD specifies. Every
+HMIS can produce one, because federal reporting depends on it.
+
+Ask for the hashed version if your system offers it. That is the file
+communities upload to Eva, HUD's data quality tool, and in it names and Social
+Security numbers are replaced by hashes. This server never reads those columns
+in either version, so you lose nothing, and the copy sitting on your computer
+holds less.
+
+Where it lives depends on the vendor, and menus move, so treat these as
+starting points:
+
+- **WellSky Community Services (ServicePoint):** on the Reports tab, "Hashed
+  HMIS CSV", then Start New Export, then Download Results.
+- **Bitfocus Clarity:** Reports, then the Report Library, then "[HUDX-111] HUD
+  CSV / XML Program Data Export" under HUD Reports, with the option to hash
+  identifying data switched on.
+- **Eccovia ClientTrack:** the HMIS CSV Export among the HMIS export tools.
+
+Who may run it is a local decision. Some communities let any agency user with
+reporting access pull it; others keep it with administrators. If you can't
+find it, ask your HMIS lead for "the hashed HMIS CSV export, the one used for
+Eva", covering your agency's projects and the dates you want to report on.
+
+Three things to know once you have it:
+
+- Leave the zip exactly as it was downloaded. Opening a CSV in Excel and
+  saving it can change dates and strip leading zeros.
+- The export only covers the date range and projects chosen when it was run,
+  so that is the most this server can report on. Run a new export to see newer
+  data.
+- It is still client-level data even when hashed, with birth dates and client
+  IDs in it. Keep it wherever your agency keeps other HMIS files.
+
 ## Supported export formats
 
 HUD has revised the CSV format three times since October 2021, and all three
