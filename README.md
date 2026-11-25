@@ -348,9 +348,11 @@ features some model providers reject, and drive the HTTP transport through a
 full OAuth sign-in. One test builds the Claude Desktop bundle and launches it
 the way a bundle host would. CI runs them on Windows, macOS and Linux.
 
-To release: raise `version` in `pyproject.toml`, merge, then publish a GitHub
-release tagged `v` plus that version. The release workflow uploads it to PyPI
-and attaches the Claude Desktop bundle to the release.
+To release: raise `version` in `pyproject.toml`, run `uv lock`, and merge to
+`main`. Then push an annotated tag named `v` plus that version, with the
+release notes as the tag's message. The release workflow checks that the tag
+matches the version and sits on `main`, uploads the package to PyPI, and
+creates the GitHub release with the Claude Desktop bundle attached.
 
 ## License
 
