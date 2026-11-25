@@ -1,6 +1,6 @@
 [project]
 name = "hmis-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "Aggregate-only MCP server for HMIS data: reports and analytics without exporting PII"
 readme = "README.md"
 license = "0BSD"

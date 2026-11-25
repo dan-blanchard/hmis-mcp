@@ -29,6 +29,22 @@ jobs:
       - run: uv sync
       - run: uv run pytest -q
 
+  bundle:
+    name: Claude Desktop bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: python3 scripts/build_bundle.py build/bundle
+      - run: npx --yes @anthropic-ai/mcpb@2.1.2 validate build/bundle
+      - run: npx --yes @anthropic-ai/mcpb@2.1.2 pack build/bundle hmis-mcp.mcpb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hmis-mcp.mcpb
+          path: hmis-mcp.mcpb
+
   package:
     # Install the built wheel the way an end user would and run it.
     name: install from wheel (${{ matrix.os }})

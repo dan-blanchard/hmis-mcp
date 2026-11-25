@@ -32,6 +32,24 @@ jobs:
           name: dist
           path: dist/
 
+  bundle:
+    # Attach the Claude Desktop bundle to the release under a fixed name, so
+    # releases/latest/download/hmis-mcp.mcpb always points at the newest one.
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: python3 scripts/build_bundle.py build/bundle
+      - run: npx --yes @anthropic-ai/mcpb@2.1.2 pack build/bundle hmis-mcp.mcpb
+      - run: gh release upload "$GITHUB_REF_NAME" hmis-mcp.mcpb --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
   publish:
     needs: build
     runs-on: ubuntu-latest

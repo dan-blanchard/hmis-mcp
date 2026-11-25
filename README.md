@@ -12,6 +12,25 @@ Services, Bitfocus Clarity, ClientTrack and the rest all export it.
 
 ## Install
 
+There are two routes. If you use Claude Desktop and would rather not touch a
+terminal, use the bundle. For every other agent, or if you are comfortable with
+a command line, use `uvx`.
+
+### Claude Desktop, no terminal
+
+1. Download [hmis-mcp.mcpb](https://github.com/dan-blanchard/hmis-mcp/releases/latest/download/hmis-mcp.mcpb).
+2. Open it with Claude Desktop. Double-clicking the file should do it; if not,
+   open Claude Desktop's settings, go to Extensions, and install it from there.
+3. When asked, choose your HMIS export: the zip file your HMIS produced for
+   the HUD CSV export. You can also set the smallest count to show and a
+   folder for a query log.
+
+Claude Desktop fetches Python and everything else the first time it starts the
+extension, which takes a minute and needs an internet connection. The export
+itself stays on your computer.
+
+### Every other agent: uvx
+
 The only thing you install yourself is [uv](https://docs.astral.sh/uv/), a
 small tool that fetches Python and this server when they are needed. There is
 nothing to clone and no Python to set up. This works the same on Windows, macOS
@@ -289,10 +308,12 @@ across every dimension, and fail if any planted value appears in any output.
 They also write the same population in each supported HUD CSV revision and
 require identical answers, check that tool schemas avoid the JSON Schema
 features some model providers reject, and drive the HTTP transport through a
-full OAuth sign-in. CI runs them on Windows, macOS and Linux.
+full OAuth sign-in. One test builds the Claude Desktop bundle and launches it
+the way a bundle host would. CI runs them on Windows, macOS and Linux.
 
 To release: raise `version` in `pyproject.toml`, merge, then publish a GitHub
-release tagged `v` plus that version. The release workflow uploads it to PyPI.
+release tagged `v` plus that version. The release workflow uploads it to PyPI
+and attaches the Claude Desktop bundle to the release.
 
 ## License
 

@@ -2,6 +2,8 @@
 __pycache__/
 *.egg-info/
 dist/
+build/
+*.mcpb
 .pytest_cache/
 # Never commit HMIS exports or audit logs.
 *.csv

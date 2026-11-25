@@ -1,0 +1,68 @@
+{
+  "manifest_version": "0.4",
+  "name": "hmis-mcp",
+  "display_name": "HMIS Statistics",
+  "version": "0.0.0",
+  "description": "Ask questions about your agency's HMIS data and get aggregate answers only. No names, identifiers or client records can be read.",
+  "long_description": "Point this at the HUD CSV export from your HMIS (the zip file your system produces) and ask for counts, breakdowns, exit destinations, length of stay and bed utilization.\n\nThe export stays on this computer. Client names, Social Security numbers and free-text fields are never loaded. Any count covering fewer than the minimum number of clients is withheld, along with any figure that would let a withheld one be worked out by subtraction.\n\nWorks with exports from any HMIS vendor in the FY2022, FY2024 or FY2026 HUD CSV format. Check with your HMIS lead before using it on real client data.",
+  "author": {
+    "name": "Dan Blanchard",
+    "url": "https://github.com/dan-blanchard"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dan-blanchard/hmis-mcp"
+  },
+  "homepage": "https://github.com/dan-blanchard/hmis-mcp",
+  "documentation": "https://github.com/dan-blanchard/hmis-mcp#readme",
+  "support": "https://github.com/dan-blanchard/hmis-mcp/issues",
+  "license": "0BSD",
+  "keywords": ["hmis", "homelessness", "hud", "reporting", "privacy"],
+  "server": {
+    "type": "uv",
+    "entry_point": "bundle_main.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": ["run", "--no-dev", "--directory", "${__dirname}", "bundle_main.py"],
+      "env": {
+        "HMIS_EXPORT_PATH": "${user_config.export_path}",
+        "HMIS_MIN_CELL_SIZE": "${user_config.min_cell_size}",
+        "HMIS_AUDIT_DIR": "${user_config.audit_dir}"
+      }
+    }
+  },
+  "user_config": {
+    "export_path": {
+      "type": "file",
+      "title": "HMIS export (zip file)",
+      "description": "The HUD CSV export from your HMIS, as the zip file it produced. It is read on this computer and never uploaded.",
+      "required": true
+    },
+    "min_cell_size": {
+      "type": "number",
+      "title": "Smallest count to show",
+      "description": "Counts covering fewer clients than this are withheld. 11 is a common standard; your CoC's privacy policy may set its own.",
+      "default": 11,
+      "min": 5,
+      "max": 100
+    },
+    "audit_dir": {
+      "type": "directory",
+      "title": "Folder for a query log (optional)",
+      "description": "If set, each question asked is recorded here with how many figures were shown or withheld. The answers themselves are not recorded.",
+      "required": false
+    }
+  },
+  "tools": [
+    {"name": "describe_dataset", "description": "Export period, privacy rules, and the measures and dimensions that can be queried"},
+    {"name": "list_projects", "description": "Projects in the export with their type, organization and bed inventory"},
+    {"name": "query_aggregate", "description": "Counts of clients, enrollments or households and length of stay, with breakdowns and filters"},
+    {"name": "bed_utilization", "description": "Monthly bed nights and utilization per project"}
+  ],
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "python": ">=3.12"
+    }
+  }
+}
